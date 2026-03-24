@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lịch Cá Nhân – Thần Số Học</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230d0a12' stroke='%23c9a96e' stroke-width='2'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='36' fill='%23c9a96e'%3E☯%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0a12;
+    --surface: #13101c;
+    --card: #1a1626;
+    --border: #2a2340;
+    --accent1: #c9a96e;
+    --accent2: #7c5cbf;
+    --accent3: #3ecfb2;
+    --good: #3ecfb2;
+    --neutral: #c9a96e;
+    --bad: #e05e7a;
+    --text: #e8e0f0;
+    --muted: #7a7090;
+    --glow: rgba(201,169,110,0.15);
+  }
+  body.light {
+    --bg: #f5f0e8;
+    --surface: #ede7d9;
+    --card: #faf6ef;
+    --border: #d8cdb8;
+    --accent1: #a07830;
+    --accent2: #5e3fa3;
+    --accent3: #1a9e88;
+    --good: #1a9e88;
+    --neutral: #a07830;
+    --bad: #c0334f;
+    --text: #2a1f0f;
+    --muted: #7a6a50;
+    --glow: rgba(160,120,48,0.15);
+  }
+  body.light::before { display: none; }
+  body.light .day-cell.good    { background: linear-gradient(135deg, #dff5f0 0%, var(--card) 100%); }
+  body.light .day-cell.neutral { background: linear-gradient(135deg, #fdf3e0 0%, var(--card) 100%); }
+  body.light .day-cell.bad     { background: linear-gradient(135deg, #fde8ec 0%, var(--card) 100%); }
+
+  .theme-toggle {
+    position: fixed; top: 18px; right: 18px; z-index: 999;
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 50px; cursor: pointer; width: 60px; height: 32px;
+    transition: background 0.3s, border-color 0.3s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    display: flex; align-items: center; padding: 0 4px;
+  }
+  .theme-toggle:hover { border-color: var(--accent1); box-shadow: 0 0 10px var(--glow); }
+  .toggle-track { width: 100%; height: 100%; position: relative; display: flex; align-items: center; }
+  .toggle-thumb {
+    position: absolute; left: 0; width: 24px; height: 24px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent1), #e8c88a);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  body.light .toggle-thumb { transform: translateX(28px); }
+  .toggle-icon-sun  { position: absolute; right: 2px;  font-size: 13px; transition: opacity 0.3s; opacity: 0.4; }
+  .toggle-icon-moon { position: absolute; left: 2px; font-size: 13px; transition: opacity 0.3s; opacity: 0.4; }
+  body.light .toggle-icon-sun  { opacity: 0.7; }
+  body:not(.light) .toggle-icon-moon { opacity: 0.7; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 85%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(2px 2px at 35% 60%, rgba(201,169,110,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 70% 50%, rgba(124,92,191,0.3) 0%, transparent 100%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ============================================================
+     ONBOARDING SCREEN
+  ============================================================ */
+  #onboardingScreen {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #onboardingScreen.hide {
+    opacity: 0; transform: scale(0.95); pointer-events: none;
+  }
+  .ob-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    max-width: 520px; width: 100%;
+    position: relative;
+    box-shadow: 0 0 60px rgba(124,92,191,0.15), 0 0 120px rgba(201,169,110,0.08);
+    animation: obFadeIn 0.6s ease;
+  }
+  @keyframes obFadeIn { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:none; } }
+
+  .ob-symbol {
+    text-align: center; font-size: 52px; margin-bottom: 20px;
+    animation: obFloat 3s ease-in-out infinite;
+  }
+  @keyframes obFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .ob-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 300;
+    color: var(--accent1); text-align: center;
+    letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .ob-sub {
+    text-align: center; font-size: 11px; letter-spacing: 3px;
+    color: var(--muted); margin-bottom: 36px;
+  }
+
+  .ob-field { margin-bottom: 20px; }
+  .ob-label {
+    display: block; font-size: 10px; letter-spacing: 3px;
+    color: var(--accent2); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ob-input {
+    width: 100%;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); padding: 14px 16px;
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    border-radius: 8px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+  }
+  .ob-input:focus { border-color: var(--accent1); box-shadow: 0 0 0 3px var(--glow); }
+  .ob-input::placeholder { color: var(--muted); }
+
+  .ob-dob-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .ob-dob-row .ob-input { text-align: center; }
+
+  .ob-btn {
+    width: 100%; margin-top: 10px; padding: 16px;
+    background: linear-gradient(135deg, var(--accent1), #e8c88a);
+    color: #0d0a12; border: none; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(201,169,110,0.3);
+  }
+  .ob-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,169,110,0.4); }
+  .ob-btn:active { transform: none; }
+  .ob-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .ob-error {
+    color: var(--bad); font-size: 11px; letter-spacing: 1px;
+    margin-top: 8px; min-height: 16px; text-align: center;
+  }
+
+  .ob-footer {
+    text-align: center; margin-top: 24px;
+    font-size: 10px; letter-spacing: 2px; color: var(--muted);
+  }
+  .ob-footer em { color: var(--accent1); font-style: normal; }
+
+  /* ornamental corners */
+  .ob-box::before, .ob-box::after {
+    content: '✦'; position: absolute;
+    color: var(--accent1); opacity: 0.3; font-size: 14px;
+  }
+  .ob-box::before { top: 16px; left: 20px; }
+  .ob-box::after  { bottom: 16px; right: 20px; }
+
+  /* ============================================================
+     MAIN APP
+  ============================================================ */
+  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  header {
+    text-align: center; padding: 40px 0 30px;
+    border-bottom: 1px solid var(--border); margin-bottom: 30px;
+    position: relative;
+  }
+  .header-tag { font-size: 11px; letter-spacing: 4px; color: var(--accent2); text-transform: uppercase; margin-bottom: 12px; }
+  .header-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(28px, 5vw, 48px); font-weight: 300;
+    color: var(--accent1); letter-spacing: 2px; line-height: 1.2;
+  }
+  .header-name em { font-style: italic; color: var(--text); }
+  .header-sub { font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-top: 8px; }
+  .numerology-badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+  .badge { background: var(--card); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .badge span { color: var(--accent1); font-weight: 500; }
+
+  .reset-btn {
+    position: absolute; top: 40px; left: 0;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 7px 14px;
+    cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 2px; border-radius: 4px; transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--accent1); color: var(--accent1); }
+
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .cal-nav button {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--accent1); padding: 10px 20px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 2px;
+    transition: all 0.2s; border-radius: 4px;
+  }
+  .cal-nav button:hover { background: var(--border); }
+  .cal-nav h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: var(--text); letter-spacing: 2px; }
+
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;
+    padding: 14px 20px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .ld-good { background: var(--good); }
+  .ld-neutral { background: var(--neutral); }
+  .ld-bad { background: var(--bad); }
+
+  .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+  .weekday-label { text-align: center; font-size: 10px; letter-spacing: 2px; color: var(--muted); padding: 8px 0; text-transform: uppercase; }
+  .weekday-label.sun { color: var(--bad); }
+  .weekday-label.sat { color: var(--accent2); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day-cell {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 6px; min-height: 90px; cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .day-cell:hover { border-color: var(--accent1); transform: translateY(-1px); }
+  .day-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+  .day-cell.today {
+    border: 2px solid var(--accent1);
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.25), 0 0 18px rgba(201,169,110,0.3), inset 0 0 12px rgba(201,169,110,0.06);
+    animation: todayPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes todayPulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(201,169,110,0.25), 0 0 18px rgba(201,169,110,0.3), inset 0 0 12px rgba(201,169,110,0.06); }
+    50%      { box-shadow: 0 0 0 5px rgba(201,169,110,0.15), 0 0 28px rgba(201,169,110,0.5), inset 0 0 16px rgba(201,169,110,0.1); }
+  }
+  .day-cell.selected { border-color: var(--accent3); box-shadow: 0 0 16px rgba(62,207,178,0.2); }
+  .day-cell.today.selected { border-color: var(--accent3); box-shadow: 0 0 0 3px rgba(62,207,178,0.25), 0 0 18px rgba(62,207,178,0.3); animation: none; }
+  .day-cell.good    { background: linear-gradient(135deg, #1a2820 0%, var(--card) 100%); }
+  .day-cell.neutral { background: linear-gradient(135deg, #241e14 0%, var(--card) 100%); }
+  .day-cell.bad     { background: linear-gradient(135deg, #261520 0%, var(--card) 100%); }
+  .day-cell.today::after {
+    content: 'HÔM NAY'; position: absolute; bottom: 5px; right: 5px;
+    font-size: 7px; letter-spacing: 1.5px; color: var(--accent1);
+    background: rgba(201,169,110,0.12); border: 1px solid rgba(201,169,110,0.35);
+    padding: 2px 5px; border-radius: 3px; font-weight: 600;
+  }
+  .day-num { font-size: 18px; font-weight: 500; line-height: 1; color: var(--text); }
+  .day-cell.today .day-num { color: var(--accent1); font-weight: 700; font-size: 20px; }
+  .day-score-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; }
+  .good .day-score-dot { background: var(--good); box-shadow: 0 0 6px var(--good); }
+  .neutral .day-score-dot { background: var(--neutral); box-shadow: 0 0 6px var(--neutral); }
+  .bad .day-score-dot { background: var(--bad); box-shadow: 0 0 6px var(--bad); }
+  .day-icons { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+  .day-icon { font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 4px; border-radius: 3px; line-height: 1; }
+  .day-lunar { font-size: 9px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  .day-num-mini { font-size: 9px; color: var(--accent2); margin-top: 2px; }
+
+  .detail-panel {
+    margin-top: 24px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px; display: none; animation: fadeIn 0.3s ease;
+  }
+  .detail-panel.show { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .dp-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+  .dp-date { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--accent1); }
+  .dp-rating { padding: 8px 20px; border-radius: 20px; font-size: 12px; letter-spacing: 2px; font-weight: 500; }
+  .dp-rating.good { background: rgba(62,207,178,0.15); color: var(--good); border: 1px solid var(--good); }
+  .dp-rating.neutral { background: rgba(201,169,110,0.15); color: var(--neutral); border: 1px solid var(--neutral); }
+  .dp-rating.bad { background: rgba(224,94,122,0.15); color: var(--bad); border: 1px solid var(--bad); }
+
+  .dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .dp-grid { grid-template-columns: 1fr; } }
+  .dp-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .dp-card-title { font-size: 10px; letter-spacing: 3px; color: var(--accent2); text-transform: uppercase; margin-bottom: 10px; }
+  .dp-card p { font-size: 13px; line-height: 1.7; color: var(--text); }
+  .dp-card .highlight { color: var(--accent1); font-weight: 500; }
+  .dp-card .good-text { color: var(--good); }
+  .dp-card .bad-text { color: var(--bad); }
+  .hour-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .hour-tag { font-size: 11px; padding: 4px 10px; border-radius: 12px; letter-spacing: 1px; }
+  .hour-good { background: rgba(62,207,178,0.1); color: var(--good); border: 1px solid rgba(62,207,178,0.3); }
+  .hour-bad  { background: rgba(224,94,122,0.1); color: var(--bad);  border: 1px solid rgba(224,94,122,0.3); }
+  .activities { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .act-tag { font-size: 11px; padding: 4px 10px; border-radius: 12px; letter-spacing: 1px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); }
+  .act-tag.yes { background: rgba(62,207,178,0.1); color: var(--good); border-color: rgba(62,207,178,0.3); }
+  .act-tag.no  { background: rgba(224,94,122,0.1); color: var(--bad);  border-color: rgba(224,94,122,0.3); }
+  .today-btn {
+    background: transparent; border: 1px solid var(--accent1); color: var(--accent1);
+    padding: 8px 16px; cursor: pointer; font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 2px; border-radius: 4px; transition: all 0.2s;
+  }
+  .today-btn:hover { background: var(--glow); }
+  .view-toggle { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+  .view-btn { background: transparent; border: none; color: var(--muted); padding: 6px 14px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; border-radius: 4px; transition: all 0.2s; }
+  .view-btn.active { background: var(--accent1); color: var(--bg); font-weight: 600; }
+  .view-btn:not(.active):hover { color: var(--text); background: var(--border); }
+
+  .week-view { display: none; animation: fadeIn 0.3s ease; }
+  .week-view.show { display: block; }
+  .month-view { display: block; }
+  .month-view.hide { display: none; }
+
+  .week-header-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; }
+  .week-header-cell { text-align: center; padding: 10px 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
+  .whc-dayname { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .whc-date { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--text); line-height: 1; }
+  .whc-lunar { font-size: 9px; color: var(--muted); margin-top: 3px; }
+  .week-header-cell.wh-today { border-color: var(--accent1); box-shadow: 0 0 0 2px rgba(201,169,110,0.2); }
+  .week-header-cell.wh-today .whc-date { color: var(--accent1); font-weight: 700; }
+  .week-header-cell.wh-today .whc-dayname { color: var(--accent1); }
+  .week-header-cell.wh-sun .whc-dayname { color: var(--bad); }
+  .week-header-cell.wh-sat .whc-dayname { color: var(--accent2); }
+
+  .week-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .week-day-col {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 10px; min-height: 320px; cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .week-day-col:hover { border-color: var(--accent1); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+  .week-day-col.wdc-good    { background: linear-gradient(180deg, #1a2820 0%, var(--card) 40%); }
+  .week-day-col.wdc-neutral { background: linear-gradient(180deg, #241e14 0%, var(--card) 40%); }
+  .week-day-col.wdc-bad     { background: linear-gradient(180deg, #261520 0%, var(--card) 40%); }
+  .week-day-col.wdc-today { border: 2px solid var(--accent1); box-shadow: 0 0 0 3px rgba(201,169,110,0.2), 0 0 20px rgba(201,169,110,0.15); animation: todayPulse 2.5s ease-in-out infinite; }
+  .week-day-col.wdc-selected { border-color: var(--accent3); box-shadow: 0 0 12px rgba(62,207,178,0.2); }
+  body.light .week-day-col.wdc-good    { background: linear-gradient(180deg, #dff5f0 0%, var(--card) 40%); }
+  body.light .week-day-col.wdc-neutral { background: linear-gradient(180deg, #fdf3e0 0%, var(--card) 40%); }
+  body.light .week-day-col.wdc-bad     { background: linear-gradient(180deg, #fde8ec 0%, var(--card) 40%); }
+  .wdc-rating-bar { height: 4px; border-radius: 2px; margin-bottom: 12px; }
+  .wdc-good .wdc-rating-bar    { background: var(--good); box-shadow: 0 0 6px var(--good); }
+  .wdc-neutral .wdc-rating-bar { background: var(--neutral); }
+  .wdc-bad .wdc-rating-bar     { background: var(--bad); box-shadow: 0 0 6px var(--bad); }
+  .wdc-rating-label { font-size: 10px; letter-spacing: 1.5px; margin-bottom: 10px; text-transform: uppercase; }
+  .wdc-good .wdc-rating-label    { color: var(--good); }
+  .wdc-neutral .wdc-rating-label { color: var(--neutral); }
+  .wdc-bad .wdc-rating-label     { color: var(--bad); }
+  .wdc-nums { font-size: 10px; color: var(--accent2); margin-bottom: 10px; letter-spacing: 1px; }
+  .wdc-divider { height: 1px; background: var(--border); margin: 10px 0; }
+  .wdc-section-title { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  .wdc-icons { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .wdc-icon-tag { font-size: 11px; background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px; }
+  .wdc-hours { display: flex; flex-direction: column; gap: 3px; }
+  .wdc-hour { font-size: 10px; padding: 3px 7px; border-radius: 8px; letter-spacing: 0.5px; }
+  .wdc-hour.good { background: rgba(62,207,178,0.1); color: var(--good); border: 1px solid rgba(62,207,178,0.25); }
+  .wdc-hour.bad  { background: rgba(224,94,122,0.08); color: var(--bad);  border: 1px solid rgba(224,94,122,0.2); }
+
+  footer { text-align: center; padding: 30px 0; margin-top: 40px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); letter-spacing: 2px; }
+  footer em { color: var(--accent1); font-style: normal; }
+
+  @media (max-width: 600px) {
+    .ob-box { padding: 32px 24px; }
+    .reset-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- THEME TOGGLE -->
+<button class="theme-toggle" onclick="toggleTheme()" title="Chuyển giao diện sáng/tối">
+  <div class="toggle-track">
+    <span class="toggle-icon-moon">🌙</span>
+    <div class="toggle-thumb">☀️</div>
+    <span class="toggle-icon-sun">☀️</span>
+  </div>
+</button>
+
+<!-- ============================================================
+     ONBOARDING SCREEN
+============================================================ -->
+<div id="onboardingScreen">
+  <div class="ob-box">
+    <div class="ob-symbol">☯</div>
+    <div class="ob-title">Lịch Thần Số Học</div>
+    <div class="ob-sub">✦ Cá Nhân Hóa Theo Lá Số Của Bạn ✦</div>
+
+    <div class="ob-field">
+      <label class="ob-label" for="inputName">Họ và Tên</label>
+      <input class="ob-input" id="inputName" type="text" placeholder="Ví dụ: Lê Thanh Nhuận" autocomplete="name" maxlength="60">
+    </div>
+
+    <div class="ob-field">
+      <label class="ob-label">Ngày Tháng Năm Sinh</label>
+      <div class="ob-dob-row">
+        <input class="ob-input" id="inputDay"   type="number" placeholder="DD"   min="1" max="31">
+        <input class="ob-input" id="inputMonth" type="number" placeholder="MM"   min="1" max="12">
+        <input class="ob-input" id="inputYear"  type="number" placeholder="YYYY" min="1900" max="2099">
+      </div>
+    </div>
+
+    <div class="ob-error" id="obError"></div>
+
+    <button class="ob-btn" id="obBtn" onclick="submitOnboarding()">
+      ✦ XEM LỊCH CÁ NHÂN ✦
+    </button>
+
+    <div class="ob-footer">
+      Dữ liệu chỉ lưu trên máy bạn · <em>Không gửi đi đâu cả</em>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+============================================================ -->
+<div class="wrapper" id="mainApp" style="display:none">
+
+  <header>
+    <button class="reset-btn" onclick="resetProfile()" title="Đổi hồ sơ">↩ ĐỔI HỒ SƠ</button>
+    <div class="header-tag">✦ Lịch Thần Số Học Cá Nhân ✦</div>
+    <div class="header-name" id="headerName"></div>
+    <div class="header-sub" id="headerDob"></div>
+    <div class="numerology-badges" id="numBadges"></div>
+  </header>
+
+  <div class="cal-nav">
+    <button id="btnPrev" onclick="navPrev()">◀ TRƯỚC</button>
+    <h2 id="monthTitle"></h2>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btnWeekView" onclick="setView('week')">TUẦN</button>
+        <button class="view-btn" id="btnMonthView" onclick="setView('month')">THÁNG</button>
+      </div>
+      <button class="today-btn" onclick="goToday()">HÔM NAY</button>
+      <button id="btnNext" onclick="navNext()">SAU ▶</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot ld-good"></div> Ngày Tốt</div>
+    <div class="legend-item"><div class="legend-dot ld-neutral"></div> Ngày Trung Bình</div>
+    <div class="legend-item"><div class="legend-dot ld-bad"></div> Ngày Xấu</div>
+    <div class="legend-item">✂️ Cắt Tóc Tốt</div>
+    <div class="legend-item">📋 Ký HĐ Tốt</div>
+    <div class="legend-item">🚀 Khởi Đầu Tốt</div>
+    <div class="legend-item">✈️ Xuất Hành Tốt</div>
+  </div>
+
+  <div class="month-view hide" id="monthView">
+    <div class="weekdays">
+      <div class="weekday-label sun">CN</div>
+      <div class="weekday-label">T2</div>
+      <div class="weekday-label">T3</div>
+      <div class="weekday-label">T4</div>
+      <div class="weekday-label">T5</div>
+      <div class="weekday-label">T6</div>
+      <div class="weekday-label sat">T7</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div class="week-view show" id="weekView">
+    <div class="week-header-row" id="weekHeaderRow"></div>
+    <div class="week-body" id="weekBody"></div>
+  </div>
+
+  <div class="detail-panel" id="detailPanel"></div>
+
+  <footer>
+    Dựa trên Thần Số Học cá nhân · <em id="footerName"></em>
+  </footer>
+</div>
+
+<script>
+// =====================================================
+// PERSON (dynamic, populated from onboarding)
+// =====================================================
+let PERSON = null;
+
+// =====================================================
+// ÂM LỊCH VIỆT NAM
+// =====================================================
+function jdFromDate(dd, mm, yy) {
+  let a = Math.floor((14 - mm) / 12);
+  let y = yy + 4800 - a;
+  let m = mm + 12 * a - 3;
+  let jd = dd + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+  if (jd < 2299161) jd = dd + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - 32083;
+  return jd;
+}
+function newMoonDay(k, tz) {
+  const T = k / 1236.85, T2 = T*T, T3 = T2*T, dr = Math.PI/180;
+  let Jd1 = 2415020.75933 + 29.53058868*k + 0.0001178*T2 - 0.000000155*T3 + 0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);
+  const M  = 359.2242 + 29.10535608*k - 0.0000333*T2 - 0.00000347*T3;
+  const Mpr= 306.0253 + 385.81691806*k + 0.0107306*T2 + 0.00001236*T3;
+  const F  = 21.2964 + 390.67050646*k - 0.0016528*T2 - 0.00000239*T3;
+  let C1 = (0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*dr*M)-0.4068*Math.sin(Mpr*dr)+0.0161*Math.sin(dr*2*Mpr)-0.0004*Math.sin(dr*3*Mpr)+0.0104*Math.sin(dr*2*F)-0.0051*Math.sin(dr*(M+Mpr))-0.0074*Math.sin(dr*(M-Mpr))+0.0004*Math.sin(dr*(2*F+M))-0.0004*Math.sin(dr*(2*F-M))-0.0006*Math.sin(dr*(2*F+Mpr))+0.0010*Math.sin(dr*(2*F-Mpr))+0.0005*Math.sin(dr*(M+2*Mpr));
+  let deltat = T < -11 ? 0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3 : -0.000278+0.000265*T+0.000262*T2;
+  return Math.floor(Jd1+C1-deltat+0.5+tz/24);
+}
+function sunLongitude(jdn, tz) {
+  const T=(jdn-2451545.5-tz/24)/36525, T2=T*T, dr=Math.PI/180;
+  const M=357.52910+35999.05030*T-0.0001559*T2-0.00000048*T*T2;
+  const L0=280.46645+36000.76983*T+0.0003032*T2;
+  let DL=(1.9146-0.004817*T-0.000014*T2)*Math.sin(dr*M)+(0.019993-0.000101*T)*Math.sin(dr*2*M)+0.00029*Math.sin(dr*3*M);
+  let L=(L0+DL)*dr;
+  L=L-Math.PI*2*Math.floor(L/(Math.PI*2));
+  return Math.floor(L/Math.PI*6);
+}
+function getLunarMonth11(yy, tz) {
+  const off=jdFromDate(31,12,yy)-2415021, k=Math.floor(off/29.530588853);
+  let nm=newMoonDay(k, tz);
+  if (sunLongitude(nm, tz) >= 9) nm=newMoonDay(k-1, tz);
+  return nm;
+}
+function getLeapMonthOffset(a11, tz) {
+  const k=Math.floor((a11-2415021.076998695)/29.530588853+0.5);
+  let last=0, i=1, arc=sunLongitude(newMoonDay(k+i,tz),tz);
+  do { last=arc; i++; arc=sunLongitude(newMoonDay(k+i,tz),tz); } while (arc!==last && i<14);
+  return i-1;
+}
+function getLunarDate(date) {
+  const tz=7, dd=date.getDate(), mm=date.getMonth()+1, yy=date.getFullYear();
+  const dayNumber=jdFromDate(dd,mm,yy);
+  const k=Math.floor((dayNumber-2415021.076998695)/29.530588853);
+  let monthStart=newMoonDay(k+1,tz);
+  if (monthStart>dayNumber) monthStart=newMoonDay(k,tz);
+  let a11=getLunarMonth11(yy,tz), b11=a11, lunarYear;
+  if (a11>=monthStart) { lunarYear=yy; a11=getLunarMonth11(yy-1,tz); }
+  else { lunarYear=yy+1; b11=getLunarMonth11(yy+1,tz); }
+  const lunarDay=dayNumber-monthStart+1;
+  const diff=Math.floor((monthStart-a11)/29);
+  let lunarLeap=false, lunarMonth=diff+11;
+  if (b11-a11>365) {
+    const lmd=getLeapMonthOffset(a11,tz);
+    if (diff>=lmd) { lunarMonth=diff+10; if (diff===lmd) lunarLeap=true; }
+  }
+  if (lunarMonth>12) lunarMonth-=12;
+  if (lunarMonth>=11 && diff<4) lunarYear-=1;
+  return `${lunarDay}/${lunarMonth}${lunarLeap?' (Nhuận)':''} Âm`;
+}
+
+// =====================================================
+// NUMEROLOGY ENGINE
+// =====================================================
+function digitSum(n) {
+  n=Math.abs(Math.round(n));
+  while (n>9 && n!==11 && n!==22 && n!==33) n=String(n).split('').reduce((a,b)=>a+parseInt(b),0);
+  return n;
+}
+function reduce(n) {
+  n=Math.abs(Math.round(n));
+  while (n>9) n=String(n).split('').reduce((a,b)=>a+parseInt(b),0);
+  return n;
+}
+
+// Tính Life Path: cộng ngày + tháng + năm (mỗi phần rút gọn riêng), giữ master
+function calcLifePath(d, m, y) { return digitSum(reduce(d) + reduce(m) + reduce(y)); }
+
+// Tính Destiny (Expression) từ họ tên – bảng Pythagorean
+function calcDestiny(name) {
+  const map = {A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,I:9,J:1,K:2,L:3,M:4,N:5,O:6,P:7,Q:8,R:9,S:1,T:2,U:3,V:4,W:5,X:6,Y:7,Z:8};
+  // Bỏ dấu tiếng Việt → Latin
+  const clean = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  let sum = 0;
+  for (const ch of clean) if (map[ch]) sum += map[ch];
+  return digitSum(sum);
+}
+
+// Day number = ngày sinh rút gọn
+function calcDayNum(d) { return digitSum(d); }
+
+// Attitude = tháng + ngày rút gọn
+function calcAttitude(d, m) { return digitSum(reduce(d) + reduce(m)); }
+
+// Maturity = LifePath + Destiny rút gọn
+function calcMaturity(lp, dest) { return digitSum(lp + dest); }
+
+// Bridge = |LifePath - Destiny| rút gọn
+function calcBridge(lp, dest) { return reduce(Math.abs(lp - dest)); }
+
+function buildPerson(name, day, month, year) {
+  const lp   = calcLifePath(day, month, year);
+  const dest = calcDestiny(name);
+  const dayN = calcDayNum(day);
+  const att  = calcAttitude(day, month);
+  const mat  = calcMaturity(lp, dest);
+  const br   = calcBridge(lp, dest);
+  return {
+    name, day, month, year,
+    lifePath: lp, destiny: dest,
+    dayNum: dayN, attitude: att,
+    maturity: mat, bridge: br,
+    dob: new Date(year, month-1, day)
+  };
+}
+
+// Personal Year/Month/Day
+function getPersonalYear(year) {
+  return digitSum(reduce(PERSON.day) + reduce(PERSON.month) + reduce(year));
+}
+function getPersonalMonth(date) {
+  return digitSum(getPersonalYear(date.getFullYear()) + (date.getMonth()+1));
+}
+function getPersonalDay(date) {
+  return digitSum(getPersonalMonth(date) + date.getDate());
+}
+function getUniversalDay(date) {
+  return digitSum(reduce(date.getDate()) + reduce(date.getMonth()+1) + reduce(date.getFullYear()));
+}
+
+// Day energy scoring based on Life Path
+function getDayEnergy(date) {
+  const pd = getPersonalDay(date);
+  const ud = getUniversalDay(date);
+  const lp = PERSON.lifePath;
+  let score = 0;
+
+  // Tốt / khó theo Life Path
+  const goodForLP = {
+    1:[1,3,5,9], 2:[2,4,6,11], 3:[3,6,9,33], 4:[4,8,22],
+    5:[1,3,5,7,9], 6:[2,6,9,3], 7:[2,4,7,11], 8:[1,2,8,22],
+    9:[3,6,9,33], 11:[2,4,11], 22:[4,8,22], 33:[3,6,9,33]
+  };
+  const hardForLP = {
+    1:[4,8], 2:[1,5,7], 3:[4,8,22], 4:[3,6,9],
+    5:[4,8,22], 6:[1,5,7], 7:[3,6,9], 8:[4,7],
+    9:[4,8,22], 11:[3,5,6,9], 22:[3,6,9], 33:[4,8,22]
+  };
+  const good = goodForLP[lp] || [1,5,9];
+  const hard = hardForLP[lp] || [4,8];
+
+  if (good.includes(pd)) score += 3;
+  else if (hard.includes(pd)) score -= 2;
+  else score += 1;
+
+  // Universal day bonus (hợp Destiny)
+  const dest = PERSON.destiny;
+  const destGood = [dest, digitSum(dest+1), digitSum(dest-1)].filter(n=>n>0&&n<10);
+  if (destGood.includes(ud)) score += 1;
+  else if ([4,8].includes(ud)) score -= 1;
+
+  if (pd===11||pd===33) score += 1;
+  if (ud===11||ud===22) score += 1;
+  return { score, pd, ud, dOW: date.getDay() };
+}
+
+function getDayRating(date) {
+  const { score } = getDayEnergy(date);
+  if (score >= 3) return 'good';
+  if (score <= 0) return 'bad';
+  return 'neutral';
+}
+
+function getActivities(date) {
+  const { pd, ud, dOW } = getDayEnergy(date);
+  const rating = getDayRating(date);
+  const haircut = [1,3,6,9].includes(pd) && dOW!==2 && dOW!==6;
+  const contract = rating!=='bad' && [1,8,3].includes(pd);
+  const startup  = rating!=='bad' && [1,5].includes(pd) && dOW!==0;
+  const travel   = [3,5,9].includes(pd) && rating!=='bad';
+  const study    = [7,3].includes(pd);
+  const finance  = [8].includes(pd) && rating!=='bad';
+  return { haircut, contract, startup, travel, study, finance };
+}
+
+function getAuspiciousHours(date) {
+  const dOW = date.getDay();
+  const sets = {
+    0:{good:['07:00–09:00','11:00–13:00','15:00–17:00'],bad:['03:00–05:00','21:00–23:00']},
+    1:{good:['05:00–07:00','09:00–11:00','17:00–19:00'],bad:['01:00–03:00','13:00–15:00']},
+    2:{good:['07:00–09:00','13:00–15:00','21:00–23:00'],bad:['05:00–07:00','17:00–19:00']},
+    3:{good:['01:00–03:00','09:00–11:00','15:00–17:00'],bad:['07:00–09:00','21:00–23:00']},
+    4:{good:['05:00–07:00','11:00–13:00','19:00–21:00'],bad:['03:00–05:00','17:00–19:00']},
+    5:{good:['07:00–09:00','11:00–13:00','17:00–19:00'],bad:['01:00–03:00','15:00–17:00']},
+    6:{good:['05:00–07:00','09:00–11:00','13:00–15:00'],bad:['07:00–09:00','19:00–21:00']},
+  };
+  return sets[dOW];
+}
+function getHaircutHours(date) {
+  const dOW = date.getDay();
+  const sets = {0:['07:00–09:00','11:00–13:00'],1:['05:00–07:00','09:00–11:00','11:00–13:00'],2:['07:00–09:00'],3:['09:00–11:00','15:00–17:00'],4:['05:00–07:00','11:00–13:00'],5:['07:00–09:00','11:00–13:00','15:00–17:00'],6:['09:00–11:00']};
+  return sets[dOW];
+}
+
+function getAdvice(date) {
+  const { pd } = getDayEnergy(date);
+  const rating = getDayRating(date);
+  const advMap = {
+    1:{general:'Ngày khởi đầu — năng lượng mạnh mẽ, hành động dứt khoát. Phù hợp ra quyết định, bắt đầu dự án mới.',solution:'Đặt mục tiêu rõ ràng cho ngày hôm nay. Tránh trì hoãn. Năng lượng số 1 ủng hộ sự độc lập và lãnh đạo.'},
+    2:{general:'Ngày hợp tác — tập trung vào các mối quan hệ, đàm phán, và lắng nghe người khác.',solution:'Dịu dàng và kiên nhẫn hơn. Tránh đưa ra quyết định một mình. Tìm sự đồng thuận.'},
+    3:{general:'Ngày sáng tạo — giao tiếp, biểu đạt, và kết nối xã hội được hỗ trợ.',solution:'Thể hiện bản thân, gặp gỡ người mới. Tốt cho marketing, viết lách, và học tập.'},
+    4:{general:'Ngày xây dựng — cẩn thận, tỉ mỉ, làm việc có hệ thống.',solution:'Tránh thay đổi lớn. Tập trung vào công việc nền tảng.'},
+    5:{general:'Ngày tự do — thích hợp cho thay đổi, di chuyển, khám phá.',solution:'Tận dụng năng lượng năng động này. Thử điều mới, du lịch, kết nối. Đây là ngày của bạn!'},
+    6:{general:'Ngày chăm sóc — tập trung vào gia đình, sức khỏe, và trách nhiệm.',solution:'Dành thời gian cho người thân. Tránh xung đột. Tốt cho các việc liên quan đến nhà cửa.'},
+    7:{general:'Ngày nội tâm — nghiên cứu, suy ngẫm, và phát triển tâm linh.',solution:'Rút lui và học hỏi. Tránh các quyết định lớn về tài chính. Thích hợp thiền định, đọc sách.'},
+    8:{general:'Ngày vật chất — tập trung vào tài chính, kinh doanh, và quyền lực.',solution:'Đàm phán mạnh mẽ, theo đuổi cơ hội tài chính. Tuy nhiên, đừng để tham vọng che mắt.'},
+    9:{general:'Ngày hoàn tất — kết thúc chu kỳ, cho đi, và chuẩn bị bắt đầu mới.',solution:'Giải quyết công việc còn dang dở. Giúp đỡ người khác. Không nên bắt đầu dự án hoàn toàn mới.'},
+    11:{general:'Ngày trực giác cao — nhạy cảm, linh cảm mạnh.',solution:'Tin vào trực giác. Tránh căng thẳng và xung đột.'},
+    22:{general:'Ngày kiến trúc sư — tầm nhìn lớn, xây dựng bền vững.',solution:'Lên kế hoạch lớn, hành động có tổ chức.'},
+    33:{general:'Ngày sư phụ — truyền cảm hứng, yêu thương.',solution:'Chia sẻ kiến thức và giúp đỡ cộng đồng.'},
+  };
+  const base = advMap[pd] || advMap[1];
+  let extra = '';
+  if (rating==='bad') extra='⚠️ Hôm nay năng lượng thấp. Nên nghỉ ngơi, tránh quyết định quan trọng.';
+  else if (rating==='good') extra='✨ Ngày năng lượng cao — hãy tận dụng tối đa!';
+  const { ud } = getDayEnergy(date);
+  return { ...base, extra, pd, ud };
+}
+
+// =====================================================
+// CALENDAR STATE
+// =====================================================
+let currentDate = new Date();
+let selectedDate = null;
+let currentView = 'week';
+let currentWeekStart = null;
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+const dayNames = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+const dayShort = ['CN','T2','T3','T4','T5','T6','T7'];
+const ratingText = { good:'✨ TỐT', neutral:'◎ TRUNG BÌNH', bad:'⚠️ XẤU' };
+const ratingFull = { good:'✨ NGÀY TỐT', neutral:'◎ NGÀY TRUNG BÌNH', bad:'⚠️ NGÀY XẤU' };
+
+function getMonday(d) {
+  const date = new Date(d); date.setHours(0,0,0,0);
+  const day = date.getDay();
+  const diff = day===0 ? -6 : 1-day;
+  date.setDate(date.getDate()+diff);
+  return date;
+}
+
+// =====================================================
+// ONBOARDING
+// =====================================================
+function submitOnboarding() {
+  const name  = document.getElementById('inputName').value.trim();
+  const day   = parseInt(document.getElementById('inputDay').value);
+  const month = parseInt(document.getElementById('inputMonth').value);
+  const year  = parseInt(document.getElementById('inputYear').value);
+  const errEl = document.getElementById('obError');
+  errEl.textContent = '';
+
+  if (!name) { errEl.textContent = '⚠ Vui lòng nhập họ và tên.'; return; }
+  if (!day||day<1||day>31) { errEl.textContent = '⚠ Ngày sinh không hợp lệ (1–31).'; return; }
+  if (!month||month<1||month>12) { errEl.textContent = '⚠ Tháng sinh không hợp lệ (1–12).'; return; }
+  if (!year||year<1900||year>new Date().getFullYear()) { errEl.textContent = '⚠ Năm sinh không hợp lệ.'; return; }
+  const testDate = new Date(year, month-1, day);
+  if (testDate.getDate()!==day) { errEl.textContent = '⚠ Ngày tháng không tồn tại.'; return; }
+
+  PERSON = buildPerson(name, day, month, year);
+  saveProfile();
+  launchApp();
+}
+
+function launchApp() {
+  // Update header
+  document.getElementById('headerName').innerHTML =
+    `✦ <em>${PERSON.name}</em>`;
+  document.getElementById('headerDob').textContent =
+    `${PERSON.day}/${PERSON.month}/${PERSON.year}`;
+  document.getElementById('footerName').textContent = PERSON.name;
+
+  // Badges
+  const badges = [
+    ['Đường đời', PERSON.lifePath],
+    ['Sứ mệnh',  PERSON.destiny],
+    ['Ngày sinh', PERSON.dayNum],
+    ['Thái độ',  PERSON.attitude],
+    ['Trưởng thành', PERSON.maturity],
+    ['Cầu nối',  PERSON.bridge],
+  ];
+  document.getElementById('numBadges').innerHTML =
+    badges.map(([l,v])=>`<div class="badge">${l} <span>${v}</span></div>`).join('');
+
+  // Hide onboarding, show app
+  document.getElementById('onboardingScreen').classList.add('hide');
+  document.getElementById('mainApp').style.display = 'block';
+
+  currentWeekStart = getMonday(TODAY);
+  setView('week');
+  setTimeout(() => selectDay(TODAY), 300);
+}
+
+function resetProfile() {
+  localStorage.removeItem('calProfile');
+  PERSON = null;
+  document.getElementById('onboardingScreen').classList.remove('hide');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('obError').textContent = '';
+}
+
+function saveProfile() {
+  try {
+    localStorage.setItem('calProfile', JSON.stringify({
+      name: PERSON.name, day: PERSON.day, month: PERSON.month, year: PERSON.year
+    }));
+  } catch(e) {}
+}
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem('calProfile');
+    if (!raw) return false;
+    const p = JSON.parse(raw);
+    if (p.name && p.day && p.month && p.year) {
+      PERSON = buildPerson(p.name, p.day, p.month, p.year);
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+// =====================================================
+// RENDER
+// =====================================================
+function setView(v) {
+  currentView = v;
+  document.getElementById('monthView').classList.toggle('hide', v!=='month');
+  document.getElementById('weekView').classList.toggle('show', v==='week');
+  document.getElementById('btnMonthView').classList.toggle('active', v==='month');
+  document.getElementById('btnWeekView').classList.toggle('active', v==='week');
+  if (v==='week') { currentWeekStart=getMonday(selectedDate||TODAY); renderWeek(); }
+  else renderCalendar();
+}
+function navPrev() { if (currentView==='month') changeMonth(-1); else changeWeek(-1); }
+function navNext() { if (currentView==='month') changeMonth(1);  else changeWeek(1); }
+function changeMonth(delta) { currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()+delta,1); renderCalendar(); }
+function changeWeek(delta) { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+delta*7); renderWeek(); }
+function goToday() {
+  if (currentView==='month') { currentDate=new Date(TODAY.getFullYear(),TODAY.getMonth(),1); renderCalendar(); setTimeout(()=>selectDay(TODAY),100); }
+  else { currentWeekStart=getMonday(TODAY); renderWeek(); setTimeout(()=>selectDay(TODAY),100); }
+}
+
+function renderCalendar() {
+  const year=currentDate.getFullYear(), month=currentDate.getMonth();
+  document.getElementById('monthTitle').textContent=`${monthNames[month]} ${year}`;
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  for (let i=0;i<firstDay;i++) { const e=document.createElement('div'); e.className='day-cell empty'; grid.appendChild(e); }
+  for (let d=1;d<=daysInMonth;d++) {
+    const date=new Date(year,month,d); date.setHours(0,0,0,0);
+    const rating=getDayRating(date);
+    const acts=getActivities(date);
+    const {pd,ud}=getDayEnergy(date);
+    const cell=document.createElement('div');
+    let cls=`day-cell ${rating}`;
+    if (date.getTime()===TODAY.getTime()) cls+=' today';
+    if (selectedDate && date.getTime()===selectedDate.getTime()) cls+=' selected';
+    cell.className=cls; cell.onclick=()=>selectDay(date);
+    const lunar=getLunarDate(date);
+    const icons=[];
+    if (acts.haircut) icons.push('<span class="day-icon">✂️</span>');
+    if (acts.contract) icons.push('<span class="day-icon">📋</span>');
+    if (acts.startup) icons.push('<span class="day-icon">🚀</span>');
+    if (acts.travel) icons.push('<span class="day-icon">✈️</span>');
+    cell.innerHTML=`<div class="day-score-dot"></div><div class="day-num">${d}</div><div class="day-num-mini">SN ${pd} · VT ${ud}</div><div class="day-icons">${icons.join('')}</div><div class="day-lunar">${lunar}</div>`;
+    grid.appendChild(cell);
+  }
+  if (selectedDate) {
+    const sm=selectedDate.getMonth(),sy=selectedDate.getFullYear();
+    if (sm===month && sy===year) renderDetail(selectedDate);
+    else document.getElementById('detailPanel').classList.remove('show');
+  }
+}
+
+function renderWeek() {
+  const days=[];
+  for (let i=0;i<7;i++) { const d=new Date(currentWeekStart); d.setDate(d.getDate()+i); d.setHours(0,0,0,0); days.push(d); }
+  const first=days[0], last=days[6];
+  document.getElementById('monthTitle').textContent=`${first.getDate()}/${first.getMonth()+1} – ${last.getDate()}/${last.getMonth()+1}/${last.getFullYear()}`;
+
+  const headerRow=document.getElementById('weekHeaderRow');
+  headerRow.innerHTML='';
+  days.forEach(date=>{
+    const dOW=date.getDay();
+    const isToday=date.getTime()===TODAY.getTime();
+    const isSun=dOW===0, isSat=dOW===6;
+    const lunar=getLunarDate(date);
+    const cell=document.createElement('div');
+    cell.className=`week-header-cell${isToday?' wh-today':''}${isSun?' wh-sun':''}${isSat?' wh-sat':''}`;
+    cell.innerHTML=`<div class="whc-dayname">${dayShort[dOW]}</div><div class="whc-date">${date.getDate()}</div><div class="whc-lunar">${lunar}</div>`;
+    headerRow.appendChild(cell);
+  });
+
+  const body=document.getElementById('weekBody'); body.innerHTML='';
+  days.forEach(date=>{
+    const rating=getDayRating(date);
+    const acts=getActivities(date);
+    const hours=getAuspiciousHours(date);
+    const {pd,ud}=getDayEnergy(date);
+    const isToday=date.getTime()===TODAY.getTime();
+    const isSelected=selectedDate && date.getTime()===selectedDate.getTime();
+    const col=document.createElement('div');
+    let cls=`week-day-col wdc-${rating}`;
+    if (isToday) cls+=' wdc-today';
+    if (isSelected) cls+=' wdc-selected';
+    col.className=cls; col.onclick=()=>selectDay(date);
+    const icons=[];
+    if (acts.haircut) icons.push('✂️ Cắt tóc');
+    if (acts.contract) icons.push('📋 Ký HĐ');
+    if (acts.startup) icons.push('🚀 Khởi đầu');
+    if (acts.travel) icons.push('✈️ Xuất hành');
+    if (acts.study) icons.push('📚 Học hỏi');
+    if (acts.finance) icons.push('💰 Tài chính');
+    const goodHours=hours.good.map(h=>`<div class="wdc-hour good">✦ ${h}</div>`).join('');
+    const badHours=hours.bad.map(h=>`<div class="wdc-hour bad">✗ ${h}</div>`).join('');
+    col.innerHTML=`
+      <div class="wdc-rating-bar"></div>
+      <div class="wdc-rating-label">${ratingText[rating]}</div>
+      <div class="wdc-nums">SN ${pd} · VT ${ud}</div>
+      ${icons.length?`<div class="wdc-divider"></div><div class="wdc-section-title">Hoạt động</div><div class="wdc-icons">${icons.map(ic=>`<span class="wdc-icon-tag">${ic}</span>`).join('')}</div>`:''}
+      <div class="wdc-divider"></div>
+      <div class="wdc-section-title">Giờ Hoàng Đạo</div>
+      <div class="wdc-hours">${goodHours}</div>
+      ${badHours?`<div class="wdc-section-title" style="margin-top:8px">Giờ Hắc Đạo</div><div class="wdc-hours">${badHours}</div>`:''}
+    `;
+    body.appendChild(col);
+  });
+
+  if (selectedDate) {
+    const inWeek=days.some(d=>d.getTime()===selectedDate.getTime());
+    if (inWeek) renderDetail(selectedDate);
+    else document.getElementById('detailPanel').classList.remove('show');
+  }
+}
+
+function selectDay(date) {
+  selectedDate=new Date(date); selectedDate.setHours(0,0,0,0);
+  if (currentView==='month') renderCalendar(); else renderWeek();
+  renderDetail(selectedDate);
+}
+
+function renderDetail(date) {
+  const panel=document.getElementById('detailPanel');
+  const rating=getDayRating(date);
+  const acts=getActivities(date);
+  const advice=getAdvice(date);
+  const hours=getAuspiciousHours(date);
+  const haircutHours=getHaircutHours(date);
+  const {pd,ud}=getDayEnergy(date);
+  const lunar=getLunarDate(date);
+
+  const actsHtml=`<div class="activities">
+    <span class="act-tag ${acts.haircut?'yes':'no'}">✂️ Cắt tóc ${acts.haircut?'✓':'✗'}</span>
+    <span class="act-tag ${acts.contract?'yes':'no'}">📋 Ký HĐ ${acts.contract?'✓':'✗'}</span>
+    <span class="act-tag ${acts.startup?'yes':'no'}">🚀 Khởi đầu ${acts.startup?'✓':'✗'}</span>
+    <span class="act-tag ${acts.travel?'yes':'no'}">✈️ Xuất hành ${acts.travel?'✓':'✗'}</span>
+    <span class="act-tag ${acts.study?'yes':'no'}">📚 Học hỏi ${acts.study?'✓':'✗'}</span>
+    <span class="act-tag ${acts.finance?'yes':'no'}">💰 Tài chính ${acts.finance?'✓':'✗'}</span>
+  </div>`;
+
+  const goodHoursHtml=hours.good.map(h=>`<span class="hour-tag hour-good">${h}</span>`).join('');
+  const badHoursHtml=hours.bad.map(h=>`<span class="hour-tag hour-bad">${h}</span>`).join('');
+  const haircutHtml=acts.haircut
+    ?`<p class="good-text" style="margin-bottom:6px">✅ Hôm nay tốt để cắt tóc!</p><div class="hour-tags">${haircutHours.map(h=>`<span class="hour-tag hour-good">✂️ ${h}</span>`).join('')}</div>`
+    :`<p class="bad-text">❌ Hôm nay không phải ngày tốt để cắt tóc.</p><p style="font-size:11px;color:var(--muted);margin-top:6px">Nên chờ ngày Personal Day 1, 3, 6, 9.</p>`;
+
+  panel.innerHTML=`
+    <div class="dp-header">
+      <div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:3px;margin-bottom:6px">${dayNames[date.getDay()].toUpperCase()}</div>
+        <div class="dp-date">${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${lunar} · SN: <span style="color:var(--accent1)">${pd}</span> · VT: <span style="color:var(--accent2)">${ud}</span></div>
+      </div>
+      <div class="dp-rating ${rating}">${ratingFull[rating]}</div>
+    </div>
+    <div class="dp-grid">
+      <div class="dp-card">
+        <div class="dp-card-title">⚡ Năng Lượng Ngày</div>
+        <p>${advice.general}</p>
+        ${advice.extra?`<p style="margin-top:10px;font-size:12px;color:var(--muted)">${advice.extra}</p>`:''}
+      </div>
+      <div class="dp-card">
+        <div class="dp-card-title">🔮 Giải Pháp & Hành Động</div>
+        <p>${advice.solution}</p>
+      </div>
+      <div class="dp-card">
+        <div class="dp-card-title">🌟 Hoạt Động Phù Hợp</div>
+        ${actsHtml}
+      </div>
+      <div class="dp-card">
+        <div class="dp-card-title">⏰ Giờ Hoàng Đạo & Hắc Đạo</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Giờ tốt:</p>
+        <div class="hour-tags">${goodHoursHtml}</div>
+        <p style="font-size:11px;color:var(--muted);margin:10px 0 6px">Giờ xấu:</p>
+        <div class="hour-tags">${badHoursHtml}</div>
+      </div>
+      <div class="dp-card" style="grid-column:1/-1">
+        <div class="dp-card-title">✂️ Gợi Ý Cắt Tóc</div>
+        ${haircutHtml}
+        <p style="font-size:11px;color:var(--muted);margin-top:12px">
+          💡 Lưu ý: Tránh cắt tóc vào Thứ 3 và Thứ 7 theo truyền thống Việt Nam.
+          Số ngày sinh <span style="color:var(--accent1)">${PERSON.dayNum}</span> ảnh hưởng đến sức thu hút cá nhân.
+        </p>
+      </div>
+    </div>
+  `;
+  panel.classList.add('show');
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// =====================================================
+// THEME TOGGLE
+// =====================================================
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  const isLight=document.body.classList.contains('light');
+  try { localStorage.setItem('calTheme', isLight?'light':'dark'); } catch(e){}
+  document.querySelector('.toggle-thumb').textContent = isLight?'🌙':'☀️';
+}
+(function() {
+  try {
+    const saved=localStorage.getItem('calTheme');
+    if (saved==='light') { document.body.classList.add('light'); document.querySelector('.toggle-thumb').textContent='🌙'; }
+  } catch(e) {}
+})();
+
+// =====================================================
+// INIT
+// =====================================================
+(function init() {
+  if (loadProfile()) launchApp();
+  // else onboarding screen is already visible
+  // allow Enter key on inputs
+  ['inputName','inputDay','inputMonth','inputYear'].forEach(id=>{
+    const el=document.getElementById(id);
+    if (el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') submitOnboarding(); });
+  });
+})();
+</script>
+</body>
+</html>
