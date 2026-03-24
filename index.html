@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lịch Cá Nhân – Thần Số Học Của Bạn</title>
+<title>Lịch Cá Nhân – Thần Số Học</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230d0a12' stroke='%23c9a96e' stroke-width='2'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='36' fill='%23c9a96e'%3E☯%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -386,7 +386,7 @@
 </button>
 
 <!-- ============================================================
-     ONBOARDING SCREEN f
+     ONBOARDING SCREEN
 ============================================================ -->
 <div id="onboardingScreen">
   <div class="ob-box">
@@ -396,7 +396,7 @@
 
     <div class="ob-field">
       <label class="ob-label" for="inputName">Họ và Tên</label>
-      <input class="ob-input" id="inputName" type="text" placeholder="Ví dụ: Lê Thanh Nhuận" autocomplete="name" maxlength="60">
+      <input class="ob-input" id="inputName" type="text" placeholder="Ví dụ: Lê Chí Thuận" autocomplete="name" maxlength="60">
     </div>
 
     <div class="ob-field">
@@ -570,8 +570,10 @@ function calcLifePath(d, m, y) { return digitSum(reduce(d) + reduce(m) + reduce(
 // Tính Destiny (Expression) từ họ tên – bảng Pythagorean
 function calcDestiny(name) {
   const map = {A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,I:9,J:1,K:2,L:3,M:4,N:5,O:6,P:7,Q:8,R:9,S:1,T:2,U:3,V:4,W:5,X:6,Y:7,Z:8};
-  // Bỏ dấu tiếng Việt → Latin
-  const clean = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  // FIX: Xử lý Đ/đ thủ công trước vì NFD không decompose được chữ này
+  const clean = name
+    .replace(/[Đ]/g, 'D').replace(/[đ]/g, 'd')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
   let sum = 0;
   for (const ch of clean) if (map[ch]) sum += map[ch];
   return digitSum(sum);
@@ -586,8 +588,8 @@ function calcAttitude(d, m) { return digitSum(reduce(d) + reduce(m)); }
 // Maturity = LifePath + Destiny rút gọn
 function calcMaturity(lp, dest) { return digitSum(lp + dest); }
 
-// Bridge = |LifePath - Destiny| rút gọn
-function calcBridge(lp, dest) { return reduce(Math.abs(lp - dest)); }
+// Bridge = |reduce(LifePath) - reduce(Destiny)| — phải rút gọn về 1-9 trước khi trừ
+function calcBridge(lp, dest) { return reduce(Math.abs(reduce(lp) - reduce(dest))); }
 
 function buildPerson(name, day, month, year) {
   const lp   = calcLifePath(day, month, year);
@@ -646,7 +648,8 @@ function getDayEnergy(date) {
 
   // Universal day bonus (hợp Destiny)
   const dest = PERSON.destiny;
-  const destGood = [dest, digitSum(dest+1), digitSum(dest-1)].filter(n=>n>0&&n<10);
+  // FIX: Bỏ điều kiện < 10 để không loại Master Numbers (11, 22, 33)
+  const destGood = [dest, digitSum(dest+1), digitSum(dest-1)].filter(n=>n>0);
   if (destGood.includes(ud)) score += 1;
   else if ([4,8].includes(ud)) score -= 1;
 
@@ -765,8 +768,10 @@ function submitOnboarding() {
 
 function launchApp() {
   // Update header
-  document.getElementById('headerName').innerHTML =
-    `✦ <em>${PERSON.name}</em>`;
+  // FIX XSS: gán tên bằng textContent để tránh injection
+  const headerNameEl = document.getElementById('headerName');
+  headerNameEl.innerHTML = '✦ <em></em>';
+  headerNameEl.querySelector('em').textContent = PERSON.name;
   document.getElementById('headerDob').textContent =
     `${PERSON.day}/${PERSON.month}/${PERSON.year}`;
   document.getElementById('footerName').textContent = PERSON.name;
