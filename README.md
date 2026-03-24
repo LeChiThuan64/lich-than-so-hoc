@@ -6,6 +6,12 @@
   <img src="https://img.shields.io/badge/Platform-Web-blue?style=for-the-badge&logo=github" alt="Platform">
 </p>
 
+<p align="center">
+  <a href="https://lechithuan64.github.io/lich-than-so-hoc/" target="_blank">
+    <img src="https://img.shields.io/badge/TRẢI_NGHIỆM_NGAY-🔗-E91E63?style=for-the-badge&logo=rocket" alt="Live Demo">
+  </a>
+</p>
+
 ---
 
 ## 🔮 Khám phá Bản đồ Cuộc đời
@@ -31,9 +37,9 @@ Dự án được xây dựng dựa trên sự kết hợp giữa logic lập tr
 
 ## 🌌 Cách thức hoạt động
 Để bắt đầu hành trình khám phá, bạn chỉ cần:
-1. Nhập chính xác Họ tên và Ngày sinh.
-2. Hệ thống sẽ thực hiện các phép toán rút gọn để tìm ra tần số rung động của bạn.
-3. Nhận kết quả phân tích chi tiết và lời khuyên cho tương lai.
+1. Truy cập vào [Trang chủ dự án](https://lechithuan64.github.io/lich-than-so-hoc/).
+2. Nhập chính xác Họ tên và Ngày sinh.
+3. Hệ thống sẽ thực hiện các phép toán rút gọn để tìm ra tần số rung động của bạn.
 
 ---
 
